@@ -23,7 +23,7 @@ The system is being developed and tested using two virtual machines to simulate 
 3.  **Python Client:**
     * A remote script used to connect to either Node Coordinator (on its VM's IP and TCP port) to send commands and receive responses.
 
-4. **Database:**
+4. **MongoDB:**
     * NoSQL document database used to store and manage data in a flexible, JSON-like format
 
 
