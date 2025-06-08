@@ -23,22 +23,17 @@ The system is being developed and tested using two virtual machines to simulate 
 3.  **Python Client:**
     * A remote script used to connect to either Node Coordinator (on its VM's IP and TCP port) to send commands and receive responses.
 
-This setup allows for testing the interaction between the network-facing Go layer and the local C++ storage layer on each simulated node, and eventually, the interaction *between* the nodes.
+4. **Database:**
+    * NoSQL document database used to store and manage data in a flexible, JSON-like format
 
-## Technology Stack
-
-* **C++:** Core data storage and retrieval logic. Chosen for performance and control.
-* **Go:** Network listeners, inter-process communication, concurrency management, and future distributed coordination.
-* **Python:** Client interface for testing and interaction.
 
 ## Project Setup & Running the Simulation
-
-These instructions will help you get one node of the database running on a Linux VM, and the client running on your local machine. For a two-node simulation, you'll replicate the VM setup steps on your second VM.
 
 **Prerequisites:**
 * VM's. Preferably atleast two.
 * SSH access to your VMs.
 * Git installed on your local machine and VMs for cloning, or scp works.
+* MongoDB and MongoDB C++ Driver
 
 ---
 ### A. On the Linux VM (Node Setup)
@@ -78,6 +73,10 @@ Perform these steps on one of your Linux VMs.
     ./storage_server
     ```
     *This server listens on a Unix Domain Socket, typically `/tmp/storage_engine.sock` (as defined in the C++ code).*
+
+* **Downloading MongoDB and its C++ Driver**
+    * Follow [this guide](https://www.mongodb.com/docs/manual/tutorial/install-mongodb-on-ubuntu/#std-label-install-mdb-community-ubuntu) for mongodb installation on unbuntu 
+    * Follow [this guide](https://www.mongodb.com/docs/languages/cpp/cpp-driver/current/get-started/) for the driver installation
 
 **2. Go Node Coordinator (TCP Server & UDS Client)**
 
