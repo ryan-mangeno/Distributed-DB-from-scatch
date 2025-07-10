@@ -1,10 +1,8 @@
 # Distributed DB from Scratch
 
-Building a distributed database from the ground up. This is a journey into the mechanics of data distribution, custom storage, and network protocols, all implemented with a focus on understanding the core principles.
-
 ---
 **Status: In Active Development**
-This system is currently being built out. Expect rough edges and ongoing changes.
+This project is currently being built  ... rough edges and ongoing changes.
 ---
 
 ## How It Works (Current Two-VM Simulation)
@@ -141,23 +139,3 @@ Perform these steps on one of your Linux VMs.
     python client.py
     ```
     *The client will connect to the Go Node Coordinator on your VM. You can then type commands like `GET key` or `PUT key value`.*
-
----
-**Order of Execution:**
-1.  Start the C++ `storage_uds_serv` on the VM.
-2.  Start the Go `node_coordinator.go` on the VM.
-3.  Run the Python `client.py` on your local PC.
-
-This setup allows you to send commands from your PC to the Go coordinator, which then interacts with the C++ storage engine on the VM.
-
-## The Vision (Where This is Headed)
-
-The goal is to evolve this two-VM setup into a system demonstrating key distributed database features:
-
-* **Data Partitioning:** Splitting data across the two (and potentially more) nodes.
-* **Replication:** Copying data between nodes for availability and fault tolerance.
-* **Inter-Node Communication Protocol:** Custom protocol for nodes to coordinate, replicate, and route queries.
-* **Consistency Mechanisms:** Implementing strategies to ensure data integrity across the distributed state.
-* **Fault Detection & Handling:** Making the system resilient to node failures.
-
-This project is about peeling back the layers and building the machinery.
