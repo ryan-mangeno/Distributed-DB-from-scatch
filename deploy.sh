@@ -25,8 +25,8 @@ else
 fi
 
 echo " Stopping existing services..."
-pkill -f storage_server
-pkill -f "go run node_coordinator.go"
+pkill -f storage_server || true
+pkill -f "go run node_coordinator.go" || true
 
 # add a small delay to ensure ports are freed 
 sleep 2
