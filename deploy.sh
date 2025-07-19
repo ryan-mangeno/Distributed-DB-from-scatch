@@ -7,7 +7,7 @@ sudo apt-get install -y build-essential libsqlite3-dev
 # if go not installed
 if ! command -v go &> /dev/null; then
   echo "Go not found. Installing Go 1.24.0..."
-  cd ~
+  cd /tmp
   wget -q https://go.dev/dl/go1.24.0.linux-amd64.tar.gz
   sudo rm -rf /usr/local/go
   sudo tar -C /usr/local -xzf go1.24.0.linux-amd64.tar.gz
@@ -15,10 +15,12 @@ if ! command -v go &> /dev/null; then
   export PATH=$PATH:/usr/local/go/bin
   source ~/.bashrc
   echo "Go installed successfully: $(go version)"
+  cd -
 else
   echo "Go is already installed: $(go version)"
 fi
 
+export PATH=$PATH:/usr/local/go/bin
 
 PROJECT_ROOT=$(pwd)
 
