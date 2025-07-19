@@ -25,8 +25,8 @@ else
   echo "Go is already installed: $(go version)"
 fi
 
-GO_BIN="$(dirname $(find /usr/local -type f -name go -executable | head -n1))"
-export PATH="$PATH:$GO_BIN"
+GO_BIN_PATH=$(command -v go)
+echo "Go binary located at: $GO_BIN_PATH"
 
 PROJECT_ROOT=$(pwd)
 
