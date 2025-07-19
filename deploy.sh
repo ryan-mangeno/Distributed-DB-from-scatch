@@ -75,8 +75,8 @@ nohup go run -v node_coordinator.go > node_coordinator.log 2>&1 &
 
 cd "$PROJECT_ROOT"
 
-sleep 2
-echo ">>> Deployment complete. Services should be running."
+sleep 5
+echo "Deployment complete. Services should be running."
 
 # Verify that the processes are running
 ps aux | grep -E "storage_server|node_coordinator"
