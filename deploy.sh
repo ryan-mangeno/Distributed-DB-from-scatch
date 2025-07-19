@@ -1,7 +1,7 @@
 PROJECT_ROOT=$(pwd)
 
-echo "C Cleaning up old socket file..."
-rm -f /tmp/storage_engine.sock
+echo "Cleaning up old socket file..."
+sudo rm -f /tmp/storage_engine.sock
 
 
 echo "[+] Checking and installing build-essential if needed..."
