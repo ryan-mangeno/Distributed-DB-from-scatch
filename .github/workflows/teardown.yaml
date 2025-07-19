@@ -15,5 +15,5 @@ jobs:
 
       - name: Run Destruction Script
         run: |
-          chmod +x destroy-services.sh
+          chmod +x teardown.sh
           ./teardown.sh

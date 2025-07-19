@@ -9,16 +9,12 @@ if ! command -v go &> /dev/null; then
   echo "Go not found in PATH. Checking /usr/local/go/bin..."
   if [ -x /usr/local/go/bin/go ]; then
     echo "Go binary found in /usr/local/go/bin. Adding to PATH..."
-    export PATH=$PATH:/usr/local/go/bin
-    echo "Go version: $(go version)"
   else
     echo "Go not installed. Installing Go 1.24.0..."
     cd /tmp
     wget -q https://go.dev/dl/go1.24.0.linux-amd64.tar.gz
     sudo rm -rf /usr/local/go
     sudo tar -C /usr/local -xzf go1.24.0.linux-amd64.tar.gz
-    export PATH=$PATH:/usr/local/go/bin
-    echo "Go installed successfully: $(go version)"
     cd -
   fi
 else
