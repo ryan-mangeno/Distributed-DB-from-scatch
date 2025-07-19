@@ -21,8 +21,8 @@ else
   echo "Go is already installed: $(go version)"
 fi
 
-export PATH=$(command -v go)
-echo "Go binary located at: $PATH"
+export GO_PATH=$(command -v go)
+echo "Go binary located at: $GO_PATH"
 
 PROJECT_ROOT=$(pwd)
 
@@ -109,7 +109,7 @@ BindsTo=storage-engine.service
 [Service]
 Type=simple
 WorkingDirectory=$GO_PROJECT_PATH
-ExecStart=/usr/local/go/bin/go run node_coordinator.go
+ExecStart=$GO_PATH run node_coordinator.go
 Restart=on-failure
 RestartSec=5
 User=runner
