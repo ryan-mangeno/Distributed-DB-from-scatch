@@ -5,9 +5,9 @@ sudo rm -f /tmp/storage_engine.sock
 
 
 echo "[+] Checking and installing build-essential if needed..."
-sudo apt-get update -y
-sudo apt-get install -y build-essential
-sudo apt-get install -y libsqlite3-dev
+sudo apt update -y
+sudo apt install -y build-essential
+sudo apt install -y libsqlite3-dev
 
 
 # if go not installed
@@ -26,8 +26,8 @@ else
 fi
 
 echo " Stopping existing services..."
-pkill -f storage_server
-pkill -f "go run node_coordinator.go"
+pkill -f storage_server || true 
+pkill -f "go run node_coordinator.go" || true
 
 # add a small delay to ensure ports are freed 
 sleep 2
