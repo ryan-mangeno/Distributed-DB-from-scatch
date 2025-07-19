@@ -1,3 +1,6 @@
+set -e
+
+
 PROJECT_ROOT=$(pwd)
 
 echo "Cleaning up old socket file..."
@@ -6,7 +9,6 @@ sudo rm -f /tmp/storage_engine.sock
 
 echo "[+] Checking and installing build-essential if needed..."
 sudo apt-get update -y
-sudo apt-get install -y build-essential
 sudo apt-get install -y libsqlite3-dev
 
 
