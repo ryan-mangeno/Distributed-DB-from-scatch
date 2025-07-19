@@ -1,0 +1,23 @@
+name: VM Maintenance
+
+on:
+  # allows you to run this workflow manually from the actions tab
+  workflow_dispatch:
+
+  # runs every sunday
+  schedule:
+    - cron: '0 3 * * 0'
+
+jobs:
+  cleanup-vms:
+    name: Run Cleanup Script on VMs
+    runs-on: self-hosted
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Run Maintenance Script
+        run: |
+          chmod +x maintenance.sh
+          ./maintenance.sh

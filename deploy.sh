@@ -1,8 +1,9 @@
 PROJECT_ROOT=$(pwd)
 
-echo "C Cleaning up old socket file..."
+echo "Cleaning up old socket file..."
 rm -f /tmp/storage_engine.sock
 
+sudo journalctl --vacuum-time=2d # cleanup since i have very little space on vm :)
 
 echo "[+] Checking and installing build-essential if needed..."
 sudo apt-get update -y
