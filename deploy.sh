@@ -32,7 +32,7 @@ pkill -f storage_server || true
 pkill -f "go run node_coordinator.go" || true
 
 # add a small delay to ensure ports are freed 
-sleep 5
+sleep 3
 
 echo "Pulling latest changes from Git..."
 git pull origin main
@@ -42,7 +42,6 @@ cd "$PROJECT_ROOT/src/engine/"
 
 g++ -o storage_server storage_uds_serv.cpp -std=c++17 -lsqlite3
 
-# check if compilation was successful
 if [ $? -ne 0 ]; then
     echo " C++ compilation failed!"
     cd "$PROJECT_ROOT"
@@ -53,7 +52,8 @@ echo " C++ compilation successful."
 echo " Starting C++ Storage Engine in the background..."
 
 
-./storage_server > storage_server.log 2>&1 &
+setsid ./storage_server > storage_server.log 2>&1 &
+sleep 1
 echo "Setting socket permissions..."
 sudo chmod o+w /tmp/storage_engine.sock
 
@@ -74,11 +74,11 @@ go mod tidy
 echo " Starting Go Node Coordinator in the background..."
 #  nohup to ensure the process keeps running.
 # logging output to a file inside its own directory.
-nohup go run -v node_coordinator.go > node_coordinator.log 2>&1 &
+setsid go run -v node_coordinator.go > node_coordinator.log 2>&1 &
 
 cd "$PROJECT_ROOT"
 
-sleep 5
+sleep 3
 echo "Deployment complete. Services should be running."
 
 # Verify that the processes are running
