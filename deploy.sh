@@ -6,7 +6,7 @@ rm -f /tmp/storage_engine.sock
 
 echo "[+] Checking and installing build-essential if needed..."
 sudo apt-get update -y
-sudo apt-get install -y build-essential
+sudo apt-get install -y build-essential libsqlite3-dev
 
 # if go not installed
 if ! command -v go &> /dev/null; then
@@ -36,7 +36,7 @@ git pull origin main
 echo  "Compiling C++ Storage Engine..."
 cd "$PROJECT_ROOT/src/engine/"
 
-g++ -o storage_server storage_uds_serv.cpp -std=c++17
+g++ -o storage_server storage_uds_serv.cpp -std=c++17 -lsqlite3
 
 # check if compilation was successful
 if [ $? -ne 0 ]; then
