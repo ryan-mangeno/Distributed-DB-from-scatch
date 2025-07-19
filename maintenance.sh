@@ -7,7 +7,7 @@ echo  "Cleaning apt package cache..."
 sudo apt-get clean
 
 echo "Cleaning old system logs (keeping last 7 days)..."
-sudo journalctl --vacuum-time=7d
+sudo journalctl --vacuum-time=2d
 
 echo " Cleaning up GitHub Actions runner work directory..."
 if [ -d /home/runner/actions-runner/_work ]; then
