@@ -1,0 +1,19 @@
+name: Destroy Services
+
+on:
+  # allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  destroy-on-vms:
+    name: Stop and Remove Services from VMs
+    runs-on: self-hosted
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Run Destruction Script
+        run: |
+          chmod +x destroy-services.sh
+          ./teardown.sh

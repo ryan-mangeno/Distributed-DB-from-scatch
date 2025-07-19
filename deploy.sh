@@ -27,9 +27,13 @@ PROJECT_ROOT=$(pwd)
 echo "Cleaning up old socket file..."
 sudo rm -f /tmp/storage_engine.sock
 
-echo " Stopping existing services..."
-pkill -f storage_server || true
-pkill -f "go run node_coordinator.go" || true
+echo "Stopping and disabling any existing services before update..."
+# stop the services if they are running
+sudo systemctl stop storage-engine.service || true
+sudo systemctl stop node-coordinator.service || true
+# Disable the services to remove auto-start symlinks. This effectively "destroys" the old service definition
+sudo systemctl disable storage-engine.service || true
+sudo systemctl disable node-coordinator.service || true
 
 # add a small delay to ensure ports are freed 
 sleep 3
@@ -49,11 +53,8 @@ if [ $? -ne 0 ]; then
 fi
 
 echo " C++ compilation successful."
-echo " Starting C++ Storage Engine in the background..."
 
 
-setsid ./storage_server > storage_server.log 2>&1 &
-sleep 1
 echo "Setting socket permissions..."
 sudo chmod o+w /tmp/storage_engine.sock
 
@@ -72,14 +73,61 @@ echo "NODE_TCP_PORT=\"$PORT_FROM_SECRET\"" > .env
 go mod tidy
 
 echo " Starting Go Node Coordinator in the background..."
-#  nohup to ensure the process keeps running.
-# logging output to a file inside its own directory.
-setsid go run -v node_coordinator.go > node_coordinator.log 2>&1 &
 
-cd "$PROJECT_ROOT"
 
-sleep 3
-echo "Deployment complete. Services should be running."
 
-# Verify that the processes are running
-ps aux | grep -E "storage_server|node_coordinator"
+# Get the absolute path to the project for the service files
+CPP_EXEC_PATH="$PROJECT_ROOT/src/engine/storage_server"
+GO_PROJECT_PATH="$PROJECT_ROOT/src/coorindator/"
+
+# create the service file for the C++ engine
+sudo bash -c "cat > /etc/systemd/system/storage-engine.service" <<EOF
+[Unit]
+Description=Distributed DB C++ Storage Engine
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=$CPP_EXEC_PATH
+Restart=on-failure
+RestartSec=5
+User=runner
+
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+
+# create the service file for the Go coordinator
+sudo bash -c "cat > /etc/systemd/system/node-coordinator.service" <<EOF
+[Unit]
+Description=Distributed DB Go Node Coordinator
+After=storage-engine.service
+BindsTo=storage-engine.service
+
+[Service]
+Type=simple
+WorkingDirectory=$GO_PROJECT_PATH
+ExecStart=/usr/local/go/bin/go run node_coordinator.go
+Restart=on-failure
+RestartSec=5
+User=runner
+Environment="NODE_TCP_PORT=$PORT_FROM_SECRET"
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+
+echo "Reloading systemd and starting services..."
+sudo systemctl daemon-reload
+sudo systemctl enable storage-engine.service
+sudo systemctl enable node-coordinator.service
+sudo systemctl restart storage-engine.service
+sudo systemctl restart node-coordinator.service
+
+echo "Deployment complete. Services are now managed by systemd"
+echo "Checking service status:"
+sudo systemctl status storage-engine.service --no-pager
+sudo systemctl status node-coordinator.service --no-pager
