@@ -50,7 +50,8 @@ echo " Starting C++ Storage Engine in the background..."
 
 
 ./storage_server > storage_server.log 2>&1 &
-
+echo "Setting socket permissions..."
+sudo chmod o+w /tmp/storage_engine.sock
 
 
 echo " Preparing Go Node Coordinator..."
