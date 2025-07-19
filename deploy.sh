@@ -7,6 +7,8 @@ rm -f /tmp/storage_engine.sock
 echo "[+] Checking and installing build-essential if needed..."
 sudo apt-get update -y
 sudo apt-get install -y build-essential
+sudo apt-get install -y libsqlite3-dev
+
 
 # if go not installed
 if ! command -v go &> /dev/null; then
@@ -36,7 +38,7 @@ git pull origin main
 echo  "Compiling C++ Storage Engine..."
 cd "$PROJECT_ROOT/src/engine/"
 
-g++ -o storage_server storage_uds_serv.cpp -std=c++17
+g++ -o storage_server storage_uds_serv.cpp -std=c++17 -lsqlite3
 
 # check if compilation was successful
 if [ $? -ne 0 ]; then
@@ -75,7 +77,7 @@ nohup go run -v node_coordinator.go > node_coordinator.log 2>&1 &
 cd "$PROJECT_ROOT"
 
 sleep 2
-echo ">>> Deployment complete. Services should be running."
+echo "Deployment complete. Services should be running."
 
 # Verify that the processes are running
 ps aux | grep -E "storage_server|node_coordinator"
