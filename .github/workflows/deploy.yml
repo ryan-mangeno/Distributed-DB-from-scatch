@@ -5,7 +5,18 @@ on:
     branches: [ "main" ]
 
 jobs:
-  deploy-on-vms:
+  deploy-on-vm1:
+    runs-on: self-hosted
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      - name: Execute deployment script
+        run: |
+          chmod +x deploy.sh
+          ./deploy.sh
+  deploy-on-vm2:
     runs-on: self-hosted
 
     steps:
