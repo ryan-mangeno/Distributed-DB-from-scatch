@@ -13,6 +13,8 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Execute deployment script
+        env:
+          PORT_FROM_SECRET: ${{ secrets.NODE_TCP_PORT }}
         run: |
           chmod +x deploy.sh
           ./deploy.sh
@@ -24,6 +26,8 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Execute deployment script
+        env:
+          PORT_FROM_SECRET: ${{ secrets.NODE_TCP_PORT }}
         run: |
           chmod +x deploy.sh
           ./deploy.sh
