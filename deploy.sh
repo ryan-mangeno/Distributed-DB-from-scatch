@@ -1,5 +1,10 @@
 PROJECT_ROOT=$(pwd)
 
+
+echo "[+] Checking and installing build-essential if needed..."
+sudo apt-get update -y
+sudo apt-get install -y build-essential
+
 # if go not installed
 if ! command -v go &> /dev/null; then
   echo "Go not found. Installing Go 1.24.0..."
@@ -48,6 +53,14 @@ echo " Starting C++ Storage Engine in the background..."
 echo " Preparing Go Node Coordinator..."
 cd "$PROJECT_ROOT/src/coorindator/"
 
+# creating .env with port
+if [ -z "$PORT_FROM_SECRET" ]; then
+    echo "Error: PORT_FROM_SECRET is not set. Did you configure it in GitHub Secrets?"
+    exit 1
+fi
+
+# create the .env file using the value from the GitHub Secret
+echo "NODE_TCP_PORT=\"$PORT_FROM_SECRET\"" > .env
 go mod tidy
 
 echo " Starting Go Node Coordinator in the background..."
