@@ -54,11 +54,6 @@ fi
 
 echo " C++ compilation successful."
 
-
-echo "Setting socket permissions..."
-sudo chmod o+w /tmp/storage_engine.sock
-
-
 echo " Preparing Go Node Coordinator..."
 cd "$PROJECT_ROOT/src/coorindator/"
 
@@ -97,6 +92,10 @@ User=runner
 [Install]
 WantedBy=multi-user.target
 EOF
+
+
+echo "Setting socket permissions..."
+sudo chmod o+w /tmp/storage_engine.sock
 
 
 # create the service file for the Go coordinator
