@@ -28,7 +28,7 @@ python3 src/cli/client.py
 ```
 ## Example Session
 ```
-Connecting to VM at 23.92.34.51:8081
+Connecting to VM at <ip-addr>:<port>
 Connected successfully!
 Enter command (e.g., 'PUT key value', 'GET key', or type 'exit' to quit): PUT ryan age 1  
 Server response: OK: User ryan saved.
