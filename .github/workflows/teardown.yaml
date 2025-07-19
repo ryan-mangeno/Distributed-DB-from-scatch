@@ -5,7 +5,19 @@ on:
   workflow_dispatch:
 
 jobs:
-  destroy-on-vms:
+  destroy-on-vm1:
+    name: Stop and Remove Services from VMs
+    runs-on: self-hosted
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Run Destruction Script
+        run: |
+          chmod +x teardown.sh
+          ./teardown.sh
+  destroy-on-vm2:
     name: Stop and Remove Services from VMs
     runs-on: self-hosted
 
