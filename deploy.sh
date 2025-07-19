@@ -84,15 +84,18 @@ After=network.target
 [Service]
 Type=simple
 ExecStart=$CPP_EXEC_PATH
+WorkingDirectory=$PROJECT_ROOT/src/engine/
 Restart=on-failure
 RestartSec=5
 User=runner
-
+StandardOutput=journal
+StandardError=journal
+PrivateTmp=false  # <-- IMPORTANT
+Environment="PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
 [Install]
 WantedBy=multi-user.target
 EOF
-
 
 # create the service file for the Go coordinator
 sudo bash -c "cat > /etc/systemd/system/node-coordinator.service" <<EOF
