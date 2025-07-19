@@ -1,5 +1,20 @@
 PROJECT_ROOT=$(pwd)
 
+# if go not installed
+if ! command -v go &> /dev/null; then
+  echo "Go not found. Installing Go 1.24.0..."
+  cd ~
+  wget -q https://go.dev/dl/go1.24.0.linux-amd64.tar.gz
+  sudo rm -rf /usr/local/go
+  sudo tar -C /usr/local -xzf go1.24.0.linux-amd64.tar.gz
+  echo "export PATH=\$PATH:/usr/local/go/bin" >> ~/.bashrc
+  export PATH=$PATH:/usr/local/go/bin
+  source ~/.bashrc
+  echo "Go installed successfully: $(go version)"
+else
+  echo "Go is already installed: $(go version)"
+fi
+
 echo " Stopping existing services..."
 pkill -f storage_server
 pkill -f "go run node_coordinator.go"
