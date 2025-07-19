@@ -70,7 +70,7 @@ go mod tidy
 echo " Starting Go Node Coordinator in the background..."
 #  nohup to ensure the process keeps running.
 # logging output to a file inside its own directory.
-nohup go run node_coordinator.go > node_coordinator.log 2>&1 &
+nohup go run -v node_coordinator.go > node_coordinator.log 2>&1 &
 
 cd "$PROJECT_ROOT"
 
