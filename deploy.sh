@@ -94,10 +94,6 @@ WantedBy=multi-user.target
 EOF
 
 
-echo "Setting socket permissions..."
-sudo chmod o+w /tmp/storage_engine.sock
-
-
 # create the service file for the Go coordinator
 sudo bash -c "cat > /etc/systemd/system/node-coordinator.service" <<EOF
 [Unit]
