@@ -1,9 +1,4 @@
-PROJECT_ROOT=$(pwd)
-
-echo "Cleaning up old socket file..."
-rm -f /tmp/storage_engine.sock
-
-sudo journalctl --vacuum-time=2d # cleanup since i have very little space on vm :)
+set -e
 
 echo "[+] Checking and installing build-essential if needed..."
 sudo apt-get update -y
@@ -24,12 +19,18 @@ else
   echo "Go is already installed: $(go version)"
 fi
 
+
+PROJECT_ROOT=$(pwd)
+
+echo "Cleaning up old socket file..."
+rm -f /tmp/storage_engine.sock
+
 echo " Stopping existing services..."
 pkill -f storage_server || true
 pkill -f "go run node_coordinator.go" || true
 
 # add a small delay to ensure ports are freed 
-sleep 2
+sleep 5
 
 echo "Pulling latest changes from Git..."
 git pull origin main
