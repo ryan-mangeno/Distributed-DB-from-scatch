@@ -1,0 +1,18 @@
+name: Deploy to VMs
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  deploy-on-vms:
+    runs-on: self-hosted
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      - name: Execute deployment script
+        run: |
+          chmod +x deploy.sh
+          ./deploy.sh
