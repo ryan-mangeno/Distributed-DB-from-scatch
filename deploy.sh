@@ -1,10 +1,14 @@
 set -e
 
-echo ">>> 🧹 Forcefully cleaning up any stuck apt processes and lock files..."
+# kill the automatic updater process if it's running
+sudo killall unattended-upgrades > /dev/null 2>&1 || true
+# kill any other apt processes
 sudo killall apt apt-get > /dev/null 2>&1 || true
+# Remove all possible lock files
 sudo rm -f /var/lib/apt/lists/lock
 sudo rm -f /var/cache/apt/archives/lock
 sudo rm -f /var/lib/dpkg/lock*
+# Reconfigure dpkg to fix any broken state
 sudo dpkg --configure -a
 
 
