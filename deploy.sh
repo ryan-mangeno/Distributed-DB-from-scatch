@@ -25,7 +25,7 @@ export PATH=$PATH:/usr/local/go/bin
 PROJECT_ROOT=$(pwd)
 
 echo "Cleaning up old socket file..."
-rm -f /tmp/storage_engine.sock
+sudo rm -f /tmp/storage_engine.sock
 
 echo " Stopping existing services..."
 pkill -f storage_server || true
