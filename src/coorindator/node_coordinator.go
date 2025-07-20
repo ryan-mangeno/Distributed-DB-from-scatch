@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/joho/godotenv" // for .env
 )
@@ -23,123 +24,171 @@ const (
 	storageEngineSocketPath = "/tmp/storage_engine.sock"
 )
 
-func getListenPort() string {
-	// os.Getenv will now pick up variables loaded by godotenv from the .env file
-	port := os.Getenv("NODE_TCP_PORT")
-	if port == "" {
-		port = NETWORK_SERVER_PORT_DEFAULT // Use the default const if NODE_TCP_PORT is not found
-		fmt.Printf("Go Node Coordinator: NODE_TCP_PORT not set, using default port %s\n", port)
-	} else {
-		fmt.Printf("Go Node Coordinator: Using port %s from NODE_TCP_PORT\n", port)
-	}
-	return port
-}
+var (
+	nodeTCPPort     string
+	nodeRole        string // 'primary'or 'secondary'
+	peerNodeAddr    string // address of other nodes ( one single other node in this scenario )
+	primaryNodeAddr string // IP address of the primary node (used by secondary for security)
+)
 
 func main() {
+	loadConfig()
 
-	err := godotenv.Load()
+	fmt.Printf("Go Node Coordinator: Starting as %s node...\n", nodeRole)
+
+	listener, err := net.Listen(NETWORK_SERVER_TYPE, net.JoinHostPort(NETWORK_SERVER_HOST, nodeTCPPort))
 	if err != nil {
-		// You can choose to log this as a warning or make it fatal if .env is required
-		log.Printf("Warning: Error loading .env file: %s. Will rely on existing env vars or defaults.", err)
-	}
-
-	fmt.Println("Go Node Coordinator: Starting TCP Server...")
-
-	listenPort := getListenPort()
-
-	listener, err := net.Listen(NETWORK_SERVER_TYPE, NETWORK_SERVER_HOST+":"+listenPort)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error listening on TCP: %v\n", err)
-		os.Exit(1)
+		log.Fatalf("Error listening on TCP: %v\n", err)
 	}
 	defer listener.Close()
-	fmt.Printf("Go Node Coordinator: TCP Server listening on %s:%s\n", NETWORK_SERVER_HOST, listenPort)
+	fmt.Printf("Go Node Coordinator: TCP Server listening on %s:%s\n", NETWORK_SERVER_HOST, nodeTCPPort)
 
 	for {
-		tcpConn, err := listener.Accept() // Accepts incoming TCP connections from remote clients
+		tcpConn, err := listener.Accept()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error accepting TCP connection: %v\n", err)
-			continue // Continue to accept other connections
+			log.Printf("Error accepting TCP connection: %v\n", err)
+			continue
 		}
-		// Handle each TCP client connection concurrently using a goroutine.
-		go handleNetworkClient(tcpConn)
+		go handleNetworkClient(tcpConn) // this can be expensive when there are many users, but is a workaround for now
 	}
 }
 
-// handleNetworkClient processes messages from a single remote TCP client and interacts with the uds storage
 func handleNetworkClient(tcpConn net.Conn) {
 	clientAddr := tcpConn.RemoteAddr().String()
+	clientIP, _, _ := net.SplitHostPort(clientAddr)
+
 	fmt.Printf("Go Node Coordinator: TCP Client connected from %s\n", clientAddr)
 	defer func() {
-		tcpConn.Close() // ensure TCP connection is closed when this handler exits, gets called before end of handleNetworkClient
+		tcpConn.Close()
 		fmt.Printf("Go Node Coordinator: TCP Client %s disconnected\n", clientAddr)
 	}()
 
 	tcpReader := bufio.NewReader(tcpConn)
 
-	for { // while loop to handle multiple commands from the same TCP client
-		// reading command from the client
-		commandFromTcpClient, err := tcpReader.ReadString('\n')
+	for {
+		commandFromClient, err := tcpReader.ReadString('\n')
 		if err != nil {
-			if err == io.EOF { //  way to detect client closing connection
-				fmt.Printf("Go Node Coordinator: TCP Client %s closed connection (EOF).\n", clientAddr)
-			} else {
-				fmt.Fprintf(os.Stderr, "Go Node Coordinator: Error reading from TCP client %s: %v\n", clientAddr, err)
+			if err != io.EOF {
+				log.Printf("Error reading from TCP client %s: %v\n", clientAddr, err)
 			}
-			return // Exit this handler, which will close the TCP connection via defer
-		}
-		commandFromTcpClient = strings.TrimSpace(commandFromTcpClient) // Remove newline/whitespace
-		if commandFromTcpClient == "" {
-			continue // Skip empty commands
-		}
-
-		fmt.Printf("Go Node Coordinator: Received from TCP client %s: '%s'\n", clientAddr, commandFromTcpClient)
-
-		// Now, act as a UDS client to send this command to the C++ storage engine
-		udsResponse, err := sendCommandToStorageEngine(commandFromTcpClient)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Go Node Coordinator: Error communicating with storage engine for client %s: %v\n", clientAddr, err)
-			// Send an error message back to the TCP client
-			_, writeErr := tcpConn.Write([]byte("ERROR: Could not process command internally.\n"))
-			if writeErr != nil {
-				fmt.Fprintf(os.Stderr, "Go Node Coordinator: Error sending error to TCP client %s: %v\n", clientAddr, writeErr)
-			}
-			continue // Continue processing next command from this TCP client, or let it disconnect
-		}
-
-		fmt.Printf("Go Node Coordinator: Received from Storage Engine: '%s'\n", udsResponse)
-
-		// Send the response from the storage engine back to the original TCP client
-		_, err = tcpConn.Write([]byte(udsResponse + "\n")) // Add newline for clarity
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Go Node Coordinator: Error writing to TCP client %s: %v\n", clientAddr, err)
 			return
 		}
-		fmt.Printf("Go Node Coordinator: Sent response to TCP client %s\n", clientAddr)
+		commandFromClient = strings.TrimSpace(commandFromClient)
+		if commandFromClient == "" {
+			continue
+		}
+
+		fmt.Printf("Go Node Coordinator: Received from %s: '%s'\n", clientAddr, commandFromClient)
+
+		// distributed logit
+		isWriteCommand := strings.HasPrefix(strings.ToUpper(commandFromClient), "PUT")
+		isFromPrimary := (nodeRole == "SECONDARY" && clientIP == primaryNodeAddr)
+
+		if nodeRole == "SECONDARY" && isWriteCommand && !isFromPrimary {
+			fmt.Println("Go Node Coordinator: Rejecting write command on secondary node from non-primary client.")
+			tcpConn.Write([]byte("ERROR: Write operations are only allowed on the primary node.\n"))
+			continue
+		}
+
+		localResponse, err := sendCommandToStorageEngine(commandFromClient)
+		if err != nil {
+			log.Printf("Error from local storage engine for client %s: %v\n", clientAddr, err)
+			tcpConn.Write([]byte("ERROR: Could not process command internally.\n"))
+			continue
+		}
+
+		if nodeRole == "PRIMARY" && isWriteCommand && strings.HasPrefix(localResponse, "OK") {
+			fmt.Printf("Go Node Coordinator: Replicating write command to secondary at %s\n", peerNodeAddr)
+			err := replicateCommandToSecondary(commandFromClient)
+			if err != nil {
+				log.Printf("FATAL: Failed to replicate command to secondary: %v. Data is now inconsistent.", err)
+				localResponse = "ERROR: Write succeeded locally but failed to replicate to secondary."
+			}
+		}
+
+		_, err = tcpConn.Write([]byte(localResponse + "\n"))
+		if err != nil {
+			log.Printf("Error writing to TCP client %s: %v\n", clientAddr, err)
+			return
+		}
 	}
 }
 
-// sendCommandToStorageEngine connects to the  UDS server, sends a command, and gets a response.
+func replicateCommandToSecondary(command string) error {
+	conn, err := net.DialTimeout("tcp", peerNodeAddr, 5*time.Second)
+	if err != nil {
+		return fmt.Errorf("could not connect to secondary node: %w", err)
+	}
+	defer conn.Close()
+
+	_, err = conn.Write([]byte(command + "\n"))
+	if err != nil {
+		return fmt.Errorf("could not send command to secondary: %w", err)
+	}
+
+	response, err := bufio.NewReader(conn).ReadString('\n')
+	if err != nil {
+		return fmt.Errorf("did not receive confirmation from secondary: %w", err)
+	}
+
+	fmt.Printf("Go Node Coordinator: Received replication confirmation: '%s'\n", strings.TrimSpace(response))
+	if !strings.HasPrefix(response, "OK") {
+		return fmt.Errorf("secondary node returned an error: %s", response)
+	}
+	return nil
+}
+
+// uds communication
 func sendCommandToStorageEngine(command string) (string, error) {
-	// net.Dial connects to the UDS path specified.
 	udsConn, err := net.Dial("unix", storageEngineSocketPath)
 	if err != nil {
 		return "", fmt.Errorf("failed to connect to UDS storage engine: %w", err)
 	}
-	defer udsConn.Close() // Ensure UDS connection is closed on exit
+	defer udsConn.Close()
 
-	// Send the command
-	_, err = udsConn.Write([]byte(command)) // Command does not need newline if  recv doesn't expect it as terminator
+	_, err = udsConn.Write([]byte(command))
 	if err != nil {
 		return "", fmt.Errorf("failed to send command to UDS storage engine: %w", err)
 	}
 
-	// Read the response from the C++ UDS server
-	udsBuffer := make([]byte, 2048) // Buffer for the response
+	udsBuffer := make([]byte, 2048)
 	n, err := udsConn.Read(udsBuffer)
 	if err != nil {
 		return "", fmt.Errorf("failed to read response from UDS storage engine: %w", err)
 	}
+	return string(udsBuffer[:n]), nil
+}
 
-	return string(udsBuffer[:n]), nil // Convert received bytes to string
+func loadConfig() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Println("Warning: Could not load .env file. Relying on environment variables.")
+	}
+
+	// Load the port, falling back to the default constant
+	nodeTCPPort = os.Getenv("NODE_TCP_PORT")
+	if nodeTCPPort == "" {
+		nodeTCPPort = NETWORK_SERVER_PORT_DEFAULT
+		log.Printf("Warning: NODE_TCP_PORT not set, using default port %s\n", nodeTCPPort)
+	}
+
+	// load the role for distributed logic
+	nodeRole = os.Getenv("NODE_ROLE")
+	if nodeRole == "" {
+		log.Fatal("FATAL: NODE_ROLE not set. Must be 'PRIMARY' or 'SECONDARY'.")
+	}
+
+	// load peer addresses based on the role
+	if nodeRole == "PRIMARY" {
+		peerNodeAddr = os.Getenv("SECONDARY_NODE_ADDR")
+		if peerNodeAddr == "" {
+			log.Fatal("FATAL: PRIMARY node requires SECONDARY_NODE_ADDR to be set.")
+		}
+	} else if nodeRole == "SECONDARY" {
+		primaryNodeIP, _, err := net.SplitHostPort(os.Getenv("PRIMARY_NODE_ADDR"))
+		if err != nil || primaryNodeIP == "" {
+			log.Fatal("FATAL: SECONDARY node requires a valid PRIMARY_NODE_ADDR to be set.")
+		}
+		primaryNodeAddr = primaryNodeIP
+	}
 }

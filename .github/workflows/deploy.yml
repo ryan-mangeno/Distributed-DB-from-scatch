@@ -20,6 +20,8 @@ jobs:
       - name: Execute deployment script
         env:
           PORT_FROM_SECRET: ${{ secrets.NODE_TCP_PORT }}
+          PRIMARY_IP_SECRET: ${{ secrets.PRIMARY_IP }}
+          SECONDARY_IP_SECRET: ${{ secrets.SECONDARY_IP }}
         run: |
           chmod +x deploy.sh
           ./deploy.sh

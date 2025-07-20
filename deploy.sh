@@ -59,14 +59,32 @@ echo " C++ compilation successful."
 echo " Preparing Go Node Coordinator..."
 cd "$PROJECT_ROOT/src/coorindator/"
 
-# creating .env with port
-if [ -z "$PORT_FROM_SECRET" ]; then
-    echo "Error: PORT_FROM_SECRET is not set. Did you configure it in GitHub Secrets?"
+
+echo "Creating distributed .env file..."
+if [ -z "$PRIMARY_IP_SECRET" ] || [ -z "$SECONDARY_IP_SECRET" ] || [ -z "$PORT_FROM_SECRET" ]; then
+    echo "FATAL: Required IP or Port secrets are not set in the workflow file."
     exit 1
 fi
 
-# create the .env file using the value from the GitHub Secret
-echo "NODE_TCP_PORT=\"$PORT_FROM_SECRET\"" > .env
+# get the primary IP address of the current VM
+LOCAL_IP=$(hostname -I | awk '{print $1}')
+
+# determine the role by comparing the local IP to the secrets
+if [ "$LOCAL_IP" == "$PRIMARY_IP_SECRET" ]; then
+    echo "Configuring as PRIMARY node."
+    echo "NODE_ROLE=PRIMARY" > .env
+    echo "SECONDARY_NODE_ADDR=${SECONDARY_IP_SECRET}:${PORT_FROM_SECRET}" >> .env
+elif [ "$LOCAL_IP" == "$SECONDARY_IP_SECRET" ]; then
+    echo "Configuring as SECONDARY node"
+    echo "NODE_ROLE=SECONDARY" > .env
+    echo "PRIMARY_NODE_ADDR=${PRIMARY_IP_SECRET}:${PORT_FROM_SECRET}" >> .env
+else
+    echo "FATAL: This VM's IP does not match PRIMARY_IP_SECRET or SECONDARY_IP_SECRET."
+    exit 1
+fi
+echo "NODE_TCP_PORT=$PORT_FROM_SECRET" >> .env
+
+
 go mod tidy
 
 echo " Starting Go Node Coordinator in the background..."
