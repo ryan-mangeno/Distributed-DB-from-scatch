@@ -9,21 +9,14 @@ on:
     - cron: '0 3 * * 0'
 
 jobs:
-  cleanup-vm1:
+  cleanup-vms:
     name: Run Cleanup Script on VM1
     runs-on: self-hosted
 
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-
-      - name: Run Maintenance Script
-        run: |
-          chmod +x maintenance.sh
-          ./maintenance.sh
-  cleanup-vm2:
-    name: Run Cleanup Script on VM2
-    runs-on: self-hosted
+    strategy:
+      matrix:
+        #  creates two parallel runs of this job
+        instance: [1, 2]
 
     steps:
       - name: Check out repository

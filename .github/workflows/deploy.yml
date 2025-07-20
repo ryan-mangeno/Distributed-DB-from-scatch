@@ -5,8 +5,13 @@ on:
     branches: [ "main" ]
 
 jobs:
-  deploy-on-vm1:
+  deploy-on-vm:
     runs-on: self-hosted
+
+    strategy:
+      matrix:
+        #  creates two parallel runs of this job
+        instance: [1, 2]
 
     steps:
       - name: Check out repository code
@@ -18,16 +23,4 @@ jobs:
         run: |
           chmod +x deploy.sh
           ./deploy.sh
-  deploy-on-vm2:
-    runs-on: self-hosted
 
-    steps:
-      - name: Check out repository code
-        uses: actions/checkout@v4
-
-      - name: Execute deployment script
-        env:
-          PORT_FROM_SECRET: ${{ secrets.NODE_TCP_PORT }}
-        run: |
-          chmod +x deploy.sh
-          ./deploy.sh

@@ -5,21 +5,15 @@ on:
   workflow_dispatch:
 
 jobs:
-  destroy-on-vm1:
+  destroy:
     name: Stop and Remove Services from VMs
     runs-on: self-hosted
-
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-
-      - name: Run Destruction Script
-        run: |
-          chmod +x teardown.sh
-          ./teardown.sh
-  destroy-on-vm2:
-    name: Stop and Remove Services from VMs
-    runs-on: self-hosted
+    
+    # use a matrix strategy to run the job multiple times
+    strategy:
+      matrix:
+        #  creates two parallel runs of this job
+        instance: [1, 2]
 
     steps:
       - name: Check out repository
